@@ -1,0 +1,6 @@
+{
+  "name": "Dynamics 365 ERD Generator",
+  "description": "An interactive Entity-Relationship Diagram (ERD) generation and visualization tool for Dynamics 365 schemas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,166 @@
+[
+  {
+    "logicalName": "account",
+    "displayName": "Account",
+    "tags": ["Core CRM", "Sales"],
+    "columns": [
+      { "name": "accountid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "name", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "telephone1", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "websiteurl", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "industrycode", "type": "Picklist", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true },
+      { "name": "modifiedon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": []
+  },
+  {
+    "logicalName": "contact",
+    "displayName": "Contact",
+    "tags": ["Core CRM", "Sales", "Marketing"],
+    "columns": [
+      { "name": "contactid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "parentcustomerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "firstname", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "lastname", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "emailaddress1", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true },
+      { "name": "modifiedon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": [
+      { "targetTable": "account", "type": "ManyToOne", "navigationProperty": "parentcustomerid_account" }
+    ]
+  },
+  {
+    "logicalName": "lead",
+    "displayName": "Lead",
+    "tags": ["Sales", "Marketing"],
+    "columns": [
+      { "name": "leadid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "fullname", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "companyname", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "emailaddress1", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "parentaccountid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "parentcontactid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "campaignid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": [
+      { "targetTable": "account", "type": "ManyToOne", "navigationProperty": "parentaccountid_account" },
+      { "targetTable": "contact", "type": "ManyToOne", "navigationProperty": "parentcontactid_contact" },
+      { "targetTable": "campaign", "type": "ManyToOne", "navigationProperty": "campaignid_campaign" }
+    ]
+  },
+  {
+    "logicalName": "opportunity",
+    "displayName": "Opportunity",
+    "tags": ["Sales"],
+    "columns": [
+      { "name": "opportunityid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "name", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "customerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "estimatedvalue", "type": "Money", "isPrimaryKey": false, "isSystem": false },
+      { "name": "closeprobability", "type": "Integer", "isPrimaryKey": false, "isSystem": false },
+      { "name": "campaignid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": [
+      { "targetTable": "account", "type": "ManyToOne", "navigationProperty": "customerid_account" },
+      { "targetTable": "contact", "type": "ManyToOne", "navigationProperty": "customerid_contact" },
+      { "targetTable": "campaign", "type": "ManyToOne", "navigationProperty": "campaignid_campaign" }
+    ]
+  },
+  {
+    "logicalName": "campaign",
+    "displayName": "Campaign",
+    "tags": ["Marketing"],
+    "columns": [
+      { "name": "campaignid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "name", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "codename", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "typecode", "type": "Picklist", "isPrimaryKey": false, "isSystem": false },
+      { "name": "expectedrevenue", "type": "Money", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": []
+  },
+  {
+    "logicalName": "marketinglist",
+    "displayName": "Marketing List",
+    "tags": ["Marketing"],
+    "columns": [
+      { "name": "listid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "listname", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "type", "type": "Boolean", "isPrimaryKey": false, "isSystem": false },
+      { "name": "membertype", "type": "Integer", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": []
+  },
+  {
+    "logicalName": "marketinglistmember",
+    "displayName": "Marketing List Member",
+    "tags": ["Marketing"],
+    "columns": [
+      { "name": "listmemberid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "listid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "entityid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": [
+      { "targetTable": "marketinglist", "type": "ManyToOne", "navigationProperty": "listid_marketinglist" },
+      { "targetTable": "contact", "type": "ManyToOne", "navigationProperty": "entityid_contact" }
+    ]
+  },
+  {
+    "logicalName": "consent",
+    "displayName": "Consent",
+    "tags": ["Marketing", "Consent & Privacy"],
+    "columns": [
+      { "name": "consentid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "name", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "consenttype", "type": "Picklist", "isPrimaryKey": false, "isSystem": false },
+      { "name": "status", "type": "Picklist", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": []
+  },
+  {
+    "logicalName": "consentdeclaration",
+    "displayName": "Consent Declaration",
+    "tags": ["Consent & Privacy"],
+    "columns": [
+      { "name": "consentdeclarationid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "contactid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "consentid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "givenon", "type": "DateTime", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": [
+      { "targetTable": "contact", "type": "ManyToOne", "navigationProperty": "contactid_contact" },
+      { "targetTable": "consent", "type": "ManyToOne", "navigationProperty": "consentid_consent" }
+    ]
+  },
+  {
+    "logicalName": "customervoicesurvey",
+    "displayName": "Customer Voice Survey",
+    "tags": ["Core CRM", "Marketing"],
+    "columns": [
+      { "name": "surveyid", "type": "Uniqueidentifier", "isPrimaryKey": true, "isSystem": false },
+      { "name": "name", "type": "String", "isPrimaryKey": false, "isSystem": false },
+      { "name": "projectid", "type": "Lookup", "isPrimaryKey": false, "isSystem": false },
+      { "name": "ownerid", "type": "Lookup", "isPrimaryKey": false, "isSystem": true },
+      { "name": "createdon", "type": "DateTime", "isPrimaryKey": false, "isSystem": true }
+    ],
+    "relationships": []
+  }
+]
