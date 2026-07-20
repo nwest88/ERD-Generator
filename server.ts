@@ -3,6 +3,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
+import fs from "fs";
+import { exec } from "child_process";
 
 dotenv.config();
 
@@ -92,6 +94,63 @@ Return ONLY the raw JSON array. DO NOT wrap it in markdown code blocks.`;
     } catch (error: any) {
       console.error("Gemini API Error:", error);
       res.status(500).json({ error: error.message || "An error occurred while calling the Gemini API." });
+    }
+  });
+
+  // Load current schema from JSON
+  app.get("/api/schema", (req, res) => {
+    try {
+      const schemaPath = path.join(process.cwd(), "src", "data", "schema.json");
+      if (fs.existsSync(schemaPath)) {
+        const raw = fs.readFileSync(schemaPath, "utf-8");
+        res.json(JSON.parse(raw));
+      } else {
+        res.status(404).json({ error: "schema.json file not found." });
+      }
+    } catch (error: any) {
+      console.error("Error loading schema:", error);
+      res.status(500).json({ error: error.message || "Failed to load schema." });
+    }
+  });
+
+  // Save updated schema back to JSON
+  app.post("/api/schema/save", (req, res) => {
+    try {
+      const { schema } = req.body;
+      if (!schema || !Array.isArray(schema)) {
+        return res.status(400).json({ error: "Invalid schema payload. Must be a JSON array." });
+      }
+
+      const schemaPath = path.join(process.cwd(), "src", "data", "schema.json");
+      fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2), "utf-8");
+      res.json({ success: true, message: "Schema saved successfully." });
+    } catch (error: any) {
+      console.error("Error saving schema:", error);
+      res.status(500).json({ error: error.message || "Failed to save schema." });
+    }
+  });
+
+  // Generate Mermaid code using python erd_logic.py CLI
+  app.post("/api/schema/mermaid", (req, res) => {
+    try {
+      const { tags } = req.body;
+      const tagsStr = Array.isArray(tags) ? tags.join(",") : "";
+      
+      const schemaPath = path.join(process.cwd(), "src", "data", "schema.json");
+      
+      // Execute the python script with command-line arguments
+      const command = `python3 erd_logic.py --action generate --filepath "${schemaPath}" --tags "${tagsStr.replace(/"/g, '\\"')}"`;
+      
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error("Error executing Python script:", error, stderr);
+          return res.status(500).json({ error: "Error executing python D365 ERD processor: " + stderr });
+        }
+        res.json({ mermaid: stdout });
+      });
+    } catch (error: any) {
+      console.error("Error generating Mermaid:", error);
+      res.status(500).json({ error: error.message || "Failed to generate Mermaid." });
     }
   });
 

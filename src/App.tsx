@@ -1,18 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import initialSchema from "./data/schema.json";
 import { Table } from "./types";
 import SchemaViewer from "./components/SchemaViewer";
 import SchemaJSONViewer from "./components/SchemaJSONViewer";
 import AISchemaAssistant from "./components/AISchemaAssistant";
+import DiagramViewer from "./components/DiagramViewer";
+import AdminPortal from "./components/AdminPortal";
 import { 
   Database, 
   Layers, 
   Code, 
   Sparkles, 
-  Settings,
-  HelpCircle,
-  TrendingUp,
-  GitBranch
+  FileText,
+  UserCheck
 } from "lucide-react";
 
 export default function App() {
@@ -21,7 +21,23 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [hideSystemColumns, setHideSystemColumns] = useState(true);
-  const [activeTab, setActiveTab] = useState<'erd' | 'json' | 'ai'>('erd');
+  const [activeTab, setActiveTab] = useState<'diagram' | 'admin' | 'erd' | 'json' | 'ai'>('diagram');
+
+  // Load the current schema from the real-time API on component mount
+  useEffect(() => {
+    const fetchSchema = async () => {
+      try {
+        const response = await fetch("/api/schema");
+        if (response.ok) {
+          const data = await response.json();
+          setSchema(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch schema from backend:", err);
+      }
+    };
+    fetchSchema();
+  }, []);
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-50 text-slate-800 overflow-hidden font-sans">
@@ -47,8 +63,32 @@ export default function App() {
         {/* Tab Navigation - Polished Segmented Control */}
         <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200/80">
           <button
+            onClick={() => setActiveTab('diagram')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'diagram'
+                ? "bg-white text-blue-700 shadow-sm border border-slate-200/40"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+            id="tab-btn-diagram"
+          >
+            <FileText className="h-3.5 w-3.5" /> Diagram Viewer
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('admin')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'admin'
+                ? "bg-white text-blue-700 shadow-sm border border-slate-200/40"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+            id="tab-btn-admin"
+          >
+            <UserCheck className="h-3.5 w-3.5" /> Admin Portal
+          </button>
+
+          <button
             onClick={() => setActiveTab('erd')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'erd'
                 ? "bg-white text-blue-700 shadow-sm border border-slate-200/40"
                 : "text-slate-600 hover:text-slate-900"
@@ -57,9 +97,10 @@ export default function App() {
           >
             <Layers className="h-3.5 w-3.5" /> Interactive ERD Canvas
           </button>
+          
           <button
             onClick={() => setActiveTab('json')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'json'
                 ? "bg-white text-blue-700 shadow-sm border border-slate-200/40"
                 : "text-slate-600 hover:text-slate-900"
@@ -68,9 +109,10 @@ export default function App() {
           >
             <Code className="h-3.5 w-3.5" /> schema.json Editor
           </button>
+          
           <button
             onClick={() => setActiveTab('ai')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'ai'
                 ? "bg-white text-blue-700 shadow-sm border border-slate-200/40"
                 : "text-slate-600 hover:text-slate-900"
@@ -98,6 +140,14 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden relative flex flex-col bg-slate-100">
+        {activeTab === 'diagram' && (
+          <DiagramViewer schema={schema} />
+        )}
+
+        {activeTab === 'admin' && (
+          <AdminPortal schema={schema} setSchema={setSchema} />
+        )}
+
         {activeTab === 'erd' && (
           <SchemaViewer
             schema={schema}

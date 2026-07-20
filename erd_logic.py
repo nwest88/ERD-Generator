@@ -167,75 +167,104 @@ def generate_mermaid(filtered_schema: List[Dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-# Example usage for testing and validation
+# CLI and Test Suite Entry point
 if __name__ == "__main__":
-    # Setup test mock data file
-    schema_filepath = "src/data/schema.json"
-    
-    print("--- D365 ERD Backend Logic Test Suite ---")
-    try:
-        # Load schema
-        schema_data = load_schema(schema_filepath)
-        print(f"Loaded {len(schema_data)} entities from schema.json successfully.")
+    import sys
+    if len(sys.argv) > 1:
+        import argparse
+        parser = argparse.ArgumentParser(description="D365 ERD Generator Command Line Interface")
+        parser.add_argument("--action", type=str, required=True, choices=["get_tags", "generate", "filter_schema"])
+        parser.add_argument("--filepath", type=str, default="src/data/schema.json")
+        parser.add_argument("--tags", type=str, default="", help="Comma-separated tags to filter by")
         
-        # Test Get Tags
-        all_tags = get_all_tags(schema_data)
-        print(f"Discovered Tags: {all_tags}")
+        args = parser.parse_args()
         
-        # Test Filter by Tag
-        test_tags = ["Marketing"]
-        filtered = filter_schema_by_tags(schema_data, test_tags)
-        print(f"Filtered to '{test_tags}': {len(filtered)} tables found.")
+        try:
+            schema_data = load_schema(args.filepath)
+            
+            if args.action == "get_tags":
+                tags = get_all_tags(schema_data)
+                print(json.dumps(tags))
+            elif args.action == "generate":
+                selected_tags = [t.strip() for t in args.tags.split(",") if t.strip()]
+                filtered = filter_schema_by_tags(schema_data, selected_tags)
+                mermaid_code = generate_mermaid(filtered)
+                print(mermaid_code)
+            elif args.action == "filter_schema":
+                selected_tags = [t.strip() for t in args.tags.split(",") if t.strip()]
+                filtered = filter_schema_by_tags(schema_data, selected_tags)
+                print(json.dumps(filtered, indent=2))
+        except Exception as e:
+            print(f"Error: {str(e)}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        # Setup test mock data file
+        schema_filepath = "src/data/schema.json"
         
-        # Test Mermaid generation on filtered subset
-        mermaid_diagram = generate_mermaid(filtered)
-        print("\nGenerated Mermaid.js ERD:")
-        print("=========================")
-        print(mermaid_diagram)
-        print("=========================")
-        
-    except FileNotFoundError:
-        print(f"No local schema.json detected at {schema_filepath}. Creating mock and trying again...")
-        # Fallback placeholder to verify functional correctness without throwing crashes
-        mock_schema = [
-            {
-                "logicalName": "account",
-                "displayName": "Account",
-                "tags": ["Core CRM"],
-                "columns": [
-                    { "name": "accountid", "type": "Uniqueidentifier", "isPrimaryKey": True, "isSystem": False },
-                    { "name": "name", "type": "String", "isPrimaryKey": False, "isSystem": False },
-                    { "name": "ownerid", "type": "Lookup", "isPrimaryKey": False, "isSystem": True }
-                ],
-                "relationships": []
-            },
-            {
-                "logicalName": "contact",
-                "displayName": "Contact",
-                "tags": ["Core CRM", "Marketing"],
-                "columns": [
-                    { "name": "contactid", "type": "Uniqueidentifier", "isPrimaryKey": True, "isSystem": False },
-                    { "name": "parentcustomerid", "type": "Lookup", "isPrimaryKey": False, "isSystem": False },
-                    { "name": "firstname", "type": "String", "isPrimaryKey": False, "isSystem": False },
-                    { "name": "lastname", "type": "String", "isPrimaryKey": False, "isSystem": False },
-                    { "name": "createdon", "type": "DateTime", "isPrimaryKey": False, "isSystem": True }
-                ],
-                "relationships": [
-                    { "targetTable": "account", "type": "ManyToOne", "navigationProperty": "parentcustomerid_account" }
-                ]
-              }
-        ]
-        
-        # Test Save
-        save_schema(mock_schema, "src/data/temp_test_schema.json")
-        print("Saved mock test database subset successfully to src/data/temp_test_schema.json.")
-        
-        # Run filters & mermaid tests on mock
-        tags = get_all_tags(mock_schema)
-        print(f"Mock Tags: {tags}")
-        filtered_mock = filter_schema_by_tags(mock_schema, ["Marketing"])
-        print(f"Filtered Mock: {generate_mermaid(filtered_mock)}")
-        
-        # Clean up temporary test file
-        if os.path.exists("src/data/temp_test_schema.json"):
-            os.remove("src/data/temp_test_schema.json")
+        print("--- D365 ERD Backend Logic Test Suite ---")
+        try:
+            # Load schema
+            schema_data = load_schema(schema_filepath)
+            print(f"Loaded {len(schema_data)} entities from schema.json successfully.")
+            
+            # Test Get Tags
+            all_tags = get_all_tags(schema_data)
+            print(f"Discovered Tags: {all_tags}")
+            
+            # Test Filter by Tag
+            test_tags = ["Marketing"]
+            filtered = filter_schema_by_tags(schema_data, test_tags)
+            print(f"Filtered to '{test_tags}': {len(filtered)} tables found.")
+            
+            # Test Mermaid generation on filtered subset
+            mermaid_diagram = generate_mermaid(filtered)
+            print("\nGenerated Mermaid.js ERD:")
+            print("=========================")
+            print(mermaid_diagram)
+            print("=========================")
+            
+        except FileNotFoundError:
+            print(f"No local schema.json detected at {schema_filepath}. Creating mock and trying again...")
+            # Fallback placeholder to verify functional correctness without throwing crashes
+            mock_schema = [
+                {
+                    "logicalName": "account",
+                    "displayName": "Account",
+                    "tags": ["Core CRM"],
+                    "columns": [
+                        { "name": "accountid", "type": "Uniqueidentifier", "isPrimaryKey": True, "isSystem": False },
+                        { "name": "name", "type": "String", "isPrimaryKey": False, "isSystem": False },
+                        { "name": "ownerid", "type": "Lookup", "isPrimaryKey": False, "isSystem": True }
+                    ],
+                    "relationships": []
+                },
+                {
+                    "logicalName": "contact",
+                    "displayName": "Contact",
+                    "tags": ["Core CRM", "Marketing"],
+                    "columns": [
+                        { "name": "contactid", "type": "Uniqueidentifier", "isPrimaryKey": True, "isSystem": False },
+                        { "name": "parentcustomerid", "type": "Lookup", "isPrimaryKey": False, "isSystem": False },
+                        { "name": "firstname", "type": "String", "isPrimaryKey": False, "isSystem": False },
+                        { "name": "lastname", "type": "String", "isPrimaryKey": False, "isSystem": False },
+                        { "name": "createdon", "type": "DateTime", "isPrimaryKey": False, "isSystem": True }
+                    ],
+                    "relationships": [
+                        { "targetTable": "account", "type": "ManyToOne", "navigationProperty": "parentcustomerid_account" }
+                    ]
+                  }
+            ]
+            
+            # Test Save
+            save_schema(mock_schema, "src/data/temp_test_schema.json")
+            print("Saved mock test database subset successfully to src/data/temp_test_schema.json.")
+            
+            # Run filters & mermaid tests on mock
+            tags = get_all_tags(mock_schema)
+            print(f"Mock Tags: {tags}")
+            filtered_mock = filter_schema_by_tags(mock_schema, ["Marketing"])
+            print(f"Filtered Mock: {generate_mermaid(filtered_mock)}")
+            
+            # Clean up temporary test file
+            if os.path.exists("src/data/temp_test_schema.json"):
+                os.remove("src/data/temp_test_schema.json")
