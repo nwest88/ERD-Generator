@@ -10,6 +10,7 @@ import {
   Maximize2,
   FileText
 } from "lucide-react";
+import { filterSchemaByTags, getAllTags, generateMermaidCode } from "../lib/erdUtils";
 
 interface DiagramViewerProps {
   schema: Table[];
@@ -26,19 +27,13 @@ export default function DiagramViewer({ schema }: DiagramViewerProps) {
 
   // 1. Load available tags dynamically from current schema
   useEffect(() => {
-    const tagsSet = new Set<string>();
-    schema.forEach(table => {
-      if (Array.isArray(table.tags)) {
-        table.tags.forEach(tag => {
-          if (tag) tagsSet.add(tag.trim());
-        });
-      }
-    });
-    const sortedTags = Array.from(tagsSet).sort();
+    const sortedTags = getAllTags(schema);
     setAvailableTags(sortedTags);
     
-    // Default select all tags initially
-    setSelectedTags(sortedTags);
+    // Default select all tags initially if nothing is selected yet
+    if (selectedTags.length === 0) {
+      setSelectedTags(sortedTags);
+    }
   }, [schema]);
 
   // 2. Load the Mermaid CDN script
@@ -48,15 +43,20 @@ export default function DiagramViewer({ schema }: DiagramViewerProps) {
     
     const initMermaid = () => {
       if ((window as any).mermaid) {
-        (window as any).mermaid.initialize({
-          startOnLoad: false,
-          theme: "forest",
-          securityLevel: "loose",
-          er: {
-            useWidth: 800,
-            direction: "LR"
-          }
-        });
+        try {
+          (window as any).mermaid.initialize({
+            startOnLoad: false,
+            theme: "forest",
+            securityLevel: "loose",
+            er: {
+              useWidth: 800,
+              direction: "LR"
+            }
+          });
+        } catch (err) {
+          console.error("Failed to initialize mermaid", err);
+        }
+        updateDiagram();
       }
     };
 
@@ -67,58 +67,59 @@ export default function DiagramViewer({ schema }: DiagramViewerProps) {
       script.async = true;
       script.onload = () => {
         initMermaid();
-        fetchMermaidCode();
       };
       document.body.appendChild(script);
     } else {
       initMermaid();
-      fetchMermaidCode();
     }
-  }, []);
+  }, [schema]);
 
-  // 3. Fetch Mermaid code from backend when selectedTags changes
-  const fetchMermaidCode = async () => {
+  // 3. Generate Mermaid code locally in real-time
+  const updateDiagram = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/schema/mermaid", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tags: selectedTags })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMermaidCode(data.mermaid || "erDiagram\n");
-      } else {
-        setError(data.error || "Failed to generate diagram.");
-      }
+      // 1. Filter the tables locally in TypeScript
+      const filtered = filterSchemaByTags(schema, selectedTags);
+      
+      // 2. Generate standard Mermaid erDiagram code
+      const code = generateMermaidCode(filtered);
+      setMermaidCode(code || "erDiagram\n");
     } catch (err: any) {
-      setError(err.message || "Failed to contact diagram service.");
+      setError(err.message || "Failed to generate diagram code.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Trigger fetch when tags change
+  // Trigger update when tags change
   useEffect(() => {
-    if (availableTags.length > 0) {
-      fetchMermaidCode();
-    }
-  }, [selectedTags, availableTags]);
+    updateDiagram();
+  }, [selectedTags, schema]);
 
-  // 4. Render Mermaid whenever mermaidCode changes
+  // 4. Render Mermaid whenever mermaidCode changes using the v10 Promise API
   useEffect(() => {
-    if (chartRef.current && (window as any).mermaid && mermaidCode) {
-      try {
-        chartRef.current.removeAttribute("data-processed");
-        chartRef.current.innerHTML = mermaidCode;
-        (window as any).mermaid.run({
-          nodes: [chartRef.current]
-        });
-      } catch (err: any) {
-        console.error("Mermaid run error:", err);
+    const renderChart = async () => {
+      if (chartRef.current && (window as any).mermaid && mermaidCode) {
+        try {
+          const uniqueId = `mermaid-svg-${Math.floor(Math.random() * 1000000)}`;
+          // Render the SVG asynchronously using Mermaid v10 API
+          const { svg } = await (window as any).mermaid.render(uniqueId, mermaidCode);
+          if (chartRef.current) {
+            chartRef.current.innerHTML = svg;
+          }
+          setError(null);
+        } catch (err: any) {
+          console.error("Mermaid render error:", err);
+          // If mermaid render throws, clear chart container and show a simple helpful instruction
+          if (chartRef.current) {
+            chartRef.current.innerHTML = `<div class="text-xs text-slate-400 italic">No valid elements or relations to display. Choose more modules.</div>`;
+          }
+        }
       }
-    }
+    };
+
+    renderChart();
   }, [mermaidCode]);
 
   const handleTagToggle = (tag: string) => {
@@ -210,7 +211,7 @@ export default function DiagramViewer({ schema }: DiagramViewerProps) {
           <div className="px-4 py-2 bg-slate-50 border-b border-slate-150 flex items-center justify-between shrink-0">
             <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Crow's Foot ERD Sandbox</span>
             <button 
-              onClick={fetchMermaidCode}
+              onClick={updateDiagram}
               className="text-slate-500 hover:text-blue-600 transition-colors p-1"
               title="Refresh Diagram"
             >

@@ -78,15 +78,12 @@ Return ONLY the raw JSON array. DO NOT wrap it in markdown code blocks.`;
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3.5-flash",
         contents: userMessage,
         config: {
           systemInstruction: systemInstruction,
           temperature: 0.2,
           responseMimeType: responseMimeType,
-          thinkingConfig: {
-            thinkingLevel: ThinkingLevel.HIGH,
-          }
         }
       });
 
