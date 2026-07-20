@@ -77,17 +77,47 @@ Return ONLY the raw JSON array. DO NOT wrap it in markdown code blocks.`;
         userMessage = `Schema: ${JSON.stringify(schema)}\n\nQuestion: ${prompt}`;
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: userMessage,
-        config: {
-          systemInstruction: systemInstruction,
-          temperature: 0.2,
-          responseMimeType: responseMimeType,
-        }
-      });
+      const modelsToTry = ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.5-flash"];
+      let lastError: any = null;
+      let responseText = "";
 
-      res.json({ result: response.text });
+      for (const modelName of modelsToTry) {
+        let attempts = 2;
+        for (let attempt = 1; attempt <= attempts; attempt++) {
+          try {
+            console.log(`Calling Gemini API using model: ${modelName} (Attempt ${attempt}/${attempts})`);
+            const response = await ai.models.generateContent({
+              model: modelName,
+              contents: userMessage,
+              config: {
+                systemInstruction: systemInstruction,
+                temperature: 0.2,
+                responseMimeType: responseMimeType,
+              }
+            });
+            if (response && response.text) {
+              responseText = response.text;
+              break;
+            }
+          } catch (err: any) {
+            lastError = err;
+            console.log(`Note: Attempt ${attempt} with model ${modelName} encountered a soft error:`, err.message || err);
+            if (attempt < attempts || modelName !== modelsToTry[modelsToTry.length - 1]) {
+              // Wait 1s before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        }
+        if (responseText) {
+          break;
+        }
+      }
+
+      if (!responseText) {
+        throw lastError || new Error("Failed to generate content after multiple attempts and fallbacks.");
+      }
+
+      res.json({ result: responseText });
     } catch (error: any) {
       console.error("Gemini API Error:", error);
       res.status(500).json({ error: error.message || "An error occurred while calling the Gemini API." });

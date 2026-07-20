@@ -72,13 +72,17 @@ export default function DiagramViewer({ schema }: DiagramViewerProps) {
     } else {
       initMermaid();
     }
-  }, [schema]);
+  }, []);
 
   // 3. Generate Mermaid code locally in real-time
   const updateDiagram = async () => {
     setLoading(true);
     setError(null);
     try {
+      if (selectedTags.length === 0) {
+        setMermaidCode("erDiagram\n");
+        return;
+      }
       // 1. Filter the tables locally in TypeScript
       const filtered = filterSchemaByTags(schema, selectedTags);
       
@@ -99,28 +103,41 @@ export default function DiagramViewer({ schema }: DiagramViewerProps) {
 
   // 4. Render Mermaid whenever mermaidCode changes using the v10 Promise API
   useEffect(() => {
+    let active = true;
     const renderChart = async () => {
-      if (chartRef.current && (window as any).mermaid && mermaidCode) {
-        try {
-          const uniqueId = `mermaid-svg-${Math.floor(Math.random() * 1000000)}`;
-          // Render the SVG asynchronously using Mermaid v10 API
-          const { svg } = await (window as any).mermaid.render(uniqueId, mermaidCode);
-          if (chartRef.current) {
-            chartRef.current.innerHTML = svg;
-          }
+      if (!chartRef.current || !(window as any).mermaid) {
+        return;
+      }
+
+      if (selectedTags.length === 0 || !mermaidCode || mermaidCode === "erDiagram\n") {
+        if (active) {
+          chartRef.current.innerHTML = "";
+        }
+        return;
+      }
+
+      try {
+        const uniqueId = `mermaid-svg-${Math.floor(Math.random() * 1000000)}`;
+        // Render the SVG asynchronously using Mermaid v10 API
+        const { svg } = await (window as any).mermaid.render(uniqueId, mermaidCode);
+        if (active && chartRef.current) {
+          chartRef.current.innerHTML = svg;
           setError(null);
-        } catch (err: any) {
-          console.error("Mermaid render error:", err);
-          // If mermaid render throws, clear chart container and show a simple helpful instruction
-          if (chartRef.current) {
-            chartRef.current.innerHTML = `<div class="text-xs text-slate-400 italic">No valid elements or relations to display. Choose more modules.</div>`;
-          }
+        }
+      } catch (err: any) {
+        console.error("Mermaid render error:", err);
+        // If mermaid render throws, clear chart container and show a simple helpful instruction
+        if (active && chartRef.current) {
+          chartRef.current.innerHTML = `<div class="text-xs text-slate-400 italic">No valid elements or relations to display. Choose more modules.</div>`;
         }
       }
     };
 
     renderChart();
-  }, [mermaidCode]);
+    return () => {
+      active = false;
+    };
+  }, [mermaidCode, selectedTags]);
 
   const handleTagToggle = (tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -220,25 +237,27 @@ export default function DiagramViewer({ schema }: DiagramViewerProps) {
           </div>
 
           <div className="flex-1 overflow-auto p-8 flex items-center justify-center bg-slate-50/50 relative">
-            {error ? (
-              <div className="text-center p-6 text-red-600 max-w-sm">
+            {error && (
+              <div className="text-center p-6 text-red-600 max-w-sm absolute">
                 <p className="text-xs font-bold uppercase mb-1">Diagram Render Failed</p>
                 <p className="text-xs text-slate-500">{error}</p>
               </div>
-            ) : selectedTags.length === 0 ? (
-              <div className="text-center p-6 text-slate-400">
+            )}
+            
+            {!error && selectedTags.length === 0 && (
+              <div className="text-center p-6 text-slate-400 absolute">
                 <HelpCircle className="h-8 w-8 mx-auto text-slate-300 mb-2" />
                 <p className="text-xs font-semibold">Select functional groupings on the left sidebar to generate the ERD.</p>
               </div>
-            ) : (
-              <div 
-                id="mermaid-chart"
-                ref={chartRef}
-                className="mermaid transition-all duration-300 scale-100 origin-center"
-              >
-                {mermaidCode}
-              </div>
             )}
+
+            <div 
+              id="mermaid-chart"
+              ref={chartRef}
+              className={`mermaid transition-all duration-300 scale-100 origin-center ${
+                !error && selectedTags.length > 0 ? "block" : "hidden"
+              }`}
+            />
           </div>
         </div>
 
